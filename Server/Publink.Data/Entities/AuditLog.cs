@@ -1,10 +1,11 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Publink.Data.Entities.Enums;
 
 namespace Publink.Data.Entities;
 
 [Table("audit_log")]
-public partial class AuditLog
+public class AuditLog
 {
     [Key]
     [Column("id")]
@@ -21,10 +22,10 @@ public partial class AuditLog
     public string? UserEmail { get; set; }
 
     [Column("type")]
-    public int Type { get; set; }
+    public Publink.Data.Entities.Enums.Type Type { get; set; }
 
     [Column("entity_type")]
-    public int EntityType { get; set; }
+    public EntityType EntityType { get; set; }
 
     [Column("created_date", TypeName = "timestamp(6) without time zone")]
     public DateTime CreatedDate { get; set; }

@@ -1,13 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using Microsoft.EntityFrameworkCore;
 
 namespace Publink.Data.Entities;
 
 [Table("document_header")]
-public partial class DocumentHeader
+public class DocumentHeader
 {
     [Key]
     [Column("id")]

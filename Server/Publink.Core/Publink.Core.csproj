@@ -7,8 +7,12 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <Folder Include="CQRS\Queries\" />
-      <Folder Include="Services\" />
+      <PackageReference Include="MediatR" Version="13.0.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Publink.Data\Publink.Data.csproj" />
+      <ProjectReference Include="..\Publink.Shared\Publink.Shared.csproj" />
     </ItemGroup>
 
 </Project>

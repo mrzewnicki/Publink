@@ -14,7 +14,7 @@ const LogsTableHeader: React.FC<Props> = ({ columns, sortColumn, sortDirection, 
     return columns.map((col) => (
       <th
         key={col.key}
-        style={{ cursor: col.sortable ? 'pointer' : 'default', color: sortColumn === col.key ? '#111827' : '#6b7280' }}
+        style={{ cursor: col.sortable ? 'pointer' : 'default', color: sortColumn === col.key ? 'white' : 'lightgrey', padding: '8px 12px', backgroundColor: '#1a1a1a' }}
         onClick={() => col.sortable && onHeaderClick(col.key)}
       >
         {col.header}

@@ -45,6 +45,9 @@ export interface LogsState {
       [pageNumber: number]: LogsPage;
     };
   };
+  // Points to the last successfully displayed page; used to keep rows visible during loading
+  lastShownSortKey?: string | null;
+  lastShownPage?: number | null;
   organizations: Organization[];
   selectedOrganizationId?: string | null;
   loading: boolean;

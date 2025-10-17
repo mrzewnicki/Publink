@@ -99,6 +99,8 @@ export const fetchLogs = createAsyncThunk<
   params.set('organizationId', String(query.organizationId));
 
   const url = `${API_BASE}?${params.toString()}`;
+  // Simulate network latency to show the loader smoothly
+  await new Promise((resolve) => setTimeout(resolve, 500));
   const res = await fetch(url);
   if (!res.ok) {
     throw new Error(`Failed to fetch logs (${res.status}): ${await res.text()}`);
@@ -123,6 +125,8 @@ const initialState: LogsState = {
     organizationId: null,
   },
   cache: {},
+  lastShownSortKey: null,
+  lastShownPage: null,
   organizations: [],
   selectedOrganizationId: null,
   loading: false,
@@ -151,6 +155,8 @@ const logsSlice = createSlice({
       state.current.organizationId = state.selectedOrganizationId;
       state.current.pageNumber = 1;
       state.cache = {};
+      state.lastShownSortKey = null;
+      state.lastShownPage = null;
       state.error = null;
     },
   },
@@ -169,6 +175,8 @@ const logsSlice = createSlice({
           state.current.organizationId = state.selectedOrganizationId;
           state.current.pageNumber = 1;
           state.cache = {};
+          state.lastShownSortKey = null;
+          state.lastShownPage = null;
         }
       })
       .addCase(fetchOrganisations.rejected, (state, action) => {
@@ -193,6 +201,9 @@ const logsSlice = createSlice({
         const { page, sortKey, data } = action.payload;
         if (!state.cache[sortKey]) state.cache[sortKey] = {};
         state.cache[sortKey][page] = data;
+        // Update lastShown pointers to keep UI stable until next page is ready
+        state.lastShownSortKey = sortKey;
+        state.lastShownPage = page;
       })
       .addCase(fetchLogs.rejected, (state, action) => {
         state.loading = false;
@@ -212,8 +223,17 @@ export const selectCurrentSortKey = (state: RootState) => {
 };
 export const selectPageData = (state: RootState) => {
   const s = state.logs.current;
-  const sortKey = `${s.organizationId ?? state.logs.selectedOrganizationId ?? 'none'}|${s.sortColumn}:${s.sortDirection}`;
-  return state.logs.cache[sortKey]?.[state.logs.current.pageNumber];
+  const desiredSortKey = `${s.organizationId ?? state.logs.selectedOrganizationId ?? 'none'}|${s.sortColumn}:${s.sortDirection}`;
+  const desiredPage = state.logs.current.pageNumber;
+  const desired = state.logs.cache[desiredSortKey]?.[desiredPage];
+  if (desired) return desired;
+  // Fallback to last shown page while loading or when target page not yet cached
+  const lastKey = state.logs.lastShownSortKey ?? undefined;
+  const lastPage = state.logs.lastShownPage ?? undefined;
+  if (lastKey !== undefined && lastPage !== undefined) {
+    return state.logs.cache[lastKey]?.[lastPage];
+  }
+  return undefined as any;
 };
 export const selectLoading = (state: RootState) => state.logs.loading;
 export const selectError = (state: RootState) => state.logs.error;

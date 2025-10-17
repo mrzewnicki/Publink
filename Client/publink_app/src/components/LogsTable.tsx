@@ -110,42 +110,69 @@ function LogsTableBase() {
         onChangePageSize={onChangePageSize}
       />
 
-      {loading && (
-        <div style={{ padding: '8px 0' }}>Loading...</div>
-      )}
       {error && (
         <div style={{ color: 'red', padding: '8px 0' }}>Error: {error}</div>
       )}
 
-      <table className="ui celled table" style={{ width: '100%' }}>
-        <LogsTableHeader
-          columns={columns}
-          sortColumn={query.sortColumn}
-          sortDirection={query.sortDirection as any}
-          onHeaderClick={onHeaderClick}
-        />
-        <tbody>
-          {items.length === 0 && !loading ? (
-            <tr>
-              <td colSpan={columns.length} style={{ textAlign: 'center' }}>
-                No data
-              </td>
-            </tr>
-          ) : (
-            items.map((row: any, idx: number) => (
-              <tr key={row.Id ?? idx}>
-                <td>{formatDate(row.CreatedDate)}</td>
-                <td>{renderTypeBadge(row.Type)}</td>
-                <td>{renderEntityBadge(row.EntityType)}</td>
-                <td>{row.ContractNumber ?? ''}</td>
-                <td>{row.ChangedBy ?? row.UserEmail ?? ''}</td>
-                <td>{formatMmSs(row.ProcessTookTime)}</td>
-                <td>{row.EntitiesAffectCount ?? ''}</td>
+      <div style={{ position: 'relative' }} aria-busy={loading} aria-live="polite">
+        <table className="ui celled table" style={{ width: '100%', margin: 0 }}>
+          <LogsTableHeader
+            columns={columns}
+            sortColumn={query.sortColumn}
+            sortDirection={query.sortDirection as any}
+            onHeaderClick={onHeaderClick}
+          />
+          <tbody style={{ backgroundColor: '#272727' }}>
+            {items.length === 0 && !loading ? (
+              <tr>
+                <td colSpan={columns.length} style={{ textAlign: 'center', color: 'red' }}>
+                  No data
+                </td>
               </tr>
-            ))
-          )}
-        </tbody>
-      </table>
+            ) : (
+              items.map((row: any, idx: number) => (
+                <tr key={row.Id ?? idx}>
+                  <td>{formatDate(row.CreatedDate)}</td>
+                  <td>{renderTypeBadge(row.Type)}</td>
+                  <td>{renderEntityBadge(row.EntityType)}</td>
+                  <td>{row.ContractNumber ?? ''}</td>
+                  <td>{row.ChangedBy ?? row.UserEmail ?? ''}</td>
+                  <td>{formatMmSs(row.ProcessTookTime)}</td>
+                  <td>{row.EntitiesAffectCount ?? ''}</td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+
+        {loading && (
+          <div
+            role="status"
+            aria-label="Loading"
+            style={{
+              position: 'absolute',
+              inset: 0,
+              background: 'rgba(0,0,0,0.35)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              backdropFilter: 'blur(1px)',
+              WebkitBackdropFilter: 'blur(1px)',
+              transition: 'opacity 150ms ease-out',
+              boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.03)'
+            }}
+          >
+            <div style={{ padding: 16, borderRadius: 12, background: 'rgba(17, 24, 39, 0.6)', boxShadow: '0 10px 25px rgba(0,0,0,0.35)' }}>
+              <svg width="56" height="56" viewBox="0 0 50 50" xmlns="http://www.w3.org/2000/svg" style={{ display: 'block' }}>
+                <circle cx="25" cy="25" r="20" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="5" />
+                <path d="M25 5 a20 20 0 0 1 0 40" fill="none" stroke="#3b82f6" strokeWidth="5" strokeLinecap="round">
+                  <animateTransform attributeName="transform" type="rotate" from="0 25 25" to="360 25 25" dur="0.8s" repeatCount="indefinite" />
+                </path>
+              </svg>
+            </div>
+          </div>
+        )}
+      </div>
 
       <LogsPagination
         pageNumber={query.pageNumber}

@@ -61,6 +61,7 @@ HTTP Request → Controller → (Query/Command) → Handler → Repository → D
 - `GET /api/organisations` — pobranie listy organizacji (np. `OrganisationsController`).
 - `GET /api/logs` — pobranie logów audytowych dla organizacji (np. `LogsController`).
 - 'GET /swagger' — dokumentacja API (w trybie DEV).
+- `GET /openapi/v1.json` — specyfikacja OpenAPI generowana automatycznie (w trybie DEV).
 
 ## Warstwa kliencka (SPA)
 
@@ -114,3 +115,39 @@ Serwer (w katalogu `Server/Publink.Api`):
 Klient (w katalogu `Client/publink_app`):
 - npm install
 - npm run dev (dev)
+
+## Wzorce projektowe i dobre praktyki — co i dlaczego
+
+Poniżej zestawiam wzorce i praktyki zastosowane w projekcie wraz z krótkim uzasadnieniem wyborów
+
+- CQRS (Command Query Responsibility Segregation)
+  - Co: rozdzielenie operacji odczytu (Queries) od zapisu (Commands/Handlers) w warstwie aplikacyjnej (Publink.Core/CQRS)
+  - Dlaczego: poprawa czytelności i skalowalności kodu. Łatwiejsze utrzymanie i testowanie przypadków użycia.Możliwość niezależnej optymalizacji ścieżek odczytu i zapisu
+
+- Repozytorium (Repository) nad EF Core
+  - Co: warstwa pośrednia między logiką aplikacyjną a DbContext/EF Core (np. AuditLogRepository).
+  - Dlaczego: enkapsulacja dostępu do danych i zapytań. Ograniczenie zależności od szczegółów implementacyjnych EF. Łatwiejsze testowanie (możliwość mockowania), spójniejsze miejsce do optymalizacji zapytań.
+
+- DTO (Data Transfer Objects) i kontrakty w warstwie Shared
+  - Co: osobne modele przesyłania danych między API/klientem a logiką aplikacyjną (Publink.Shared/Dtos)
+  - Dlaczego: separacja kontraktów API od encji/struktur bazodanowych. Kontrola ekspozycji pól (bezpieczeństwo) i stabilność publicznego API.
+
+- Wstrzykiwanie zależności (Dependency Injection)
+  - Co: wykorzystanie wbudowanego DI w ASP.NET Core do rejestrowania repozytoriów/usług i handlerów
+  - Dlaczego: luźne powiązania między warstwami, łatwiejsza wymiana implementacji. wyższa testowalność i czytelna konfiguracja kompozycji aplikacji.
+
+- Asynchroniczność (async/await)
+  - Co: stosowanie asynchronicznych operacji IO przy pracy z bazą i siecią.
+  - Dlaczego: lepsza skalowalność serwera pod obciążeniem oraz responsywność. Efektywne wykorzystanie zasobów.
+
+- Spójność i prostota warstw
+  - Co: wyraźny podział na Api/Core/Data/Shared oraz mirrorowanie tych granic w strukturze katalogów.
+  - Dlaczego: mniejsza złożoność poznawcza, krótszy czas wdrożenia nowych osób, łatwiejsza nawigacja i refaktoryzacja
+
+- Frontend: React + TypeScript + Vite
+  - Co: komponenty funkcyjne, silne typowanie, szybki cykl dev/build. Konfiguracja w vite.config.ts
+  - Dlaczego: czytelna i przewidywalna praca nad UI, wczesne wykrywanie błędów typów, szybkie środowisko developerskie.
+
+- OpenAPI i Swagger
+  - Co: automatyczna specyfikacja OpenAPI generowana przez ASP.NET Core (AddOpenApi/MapOpenApi) oraz dokumentacja UI przez Swashbuckle/Swagger UI.
+  - Dlaczego: samoopisujące się API.Łatwiejsza integracja, szybkie poznanie endpointów przez UI

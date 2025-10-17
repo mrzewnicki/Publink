@@ -33,22 +33,47 @@ public static class GetLogsForOrganisationQuery
 
             Func<AuditLog, bool> predicate = log => log.OrganizationId == request.OrganizationId;
 
-            var entities = repository.GetList(predicate, pagination, order);
-            var items = entities.Select(MapToDto).AsEnumerable();
+            var entities = repository.GetList(predicate, pagination, order).ToList();
+
+            // Aggregate by correlation IDs to compute affected rows and time span
+            var correlationIds = entities
+                .Where(e => e.CorrelationId.HasValue)
+                .Select(e => e.CorrelationId!.Value)
+                .Distinct()
+                .ToList();
+
+            var aggregates = await repository.GetAggregatesByCorrelationIdsAsync(correlationIds, cancellationToken);
+
+            var items = entities.Select(e => MapToDto(e, aggregates)).AsEnumerable();
             var totalCount = await repository.CountAsync(predicate, cancellationToken);
 
             return new Response(items, totalCount);
         }
 
-        private static AuditLogDto MapToDto(AuditLog e) => new AuditLogDto
+        private static AuditLogDto MapToDto(AuditLog e, IReadOnlyDictionary<Guid, ChangeAggregate> aggregates)
         {
-            Id = e.Id,
-            ChangedBy = e.UserEmail,
-            ContractNumber = e.DocumentHeader != null && e.DocumentHeader.Number != null ? e.DocumentHeader.Number : string.Empty,
-            Type = (int)e.Type,
-            EntityType = (int)e.EntityType,
-            CreatedDate = e.CreatedDate,
-        };
+            var count = 1;
+            var duration = TimeSpan.Zero;
+
+            if (e.CorrelationId.HasValue && aggregates.TryGetValue(e.CorrelationId.Value, out var agg))
+            {
+                count = agg.Count;
+                duration = agg.Duration;
+            }
+
+            return new AuditLogDto
+            {
+                Id = e.Id,
+                ChangedBy = e.UserEmail,
+                ContractNumber = e.DocumentHeader != null && e.DocumentHeader.Number != null ? e.DocumentHeader.Number : string.Empty,
+                Type = (int)e.Type,
+                EntityType = (int)e.EntityType,
+                CreatedDate = e.CreatedDate,
+                // Encode duration as a DateTime based on ticks (DTO uses DateTime; keeping API stable)
+                ProcessTookTime = new DateTime(duration.Ticks, DateTimeKind.Utc),
+                EntitiesAffectCount = count
+            };
+        }
 
         private static OrderByQuery<AuditLog> ParseSort(string? sort)
         {

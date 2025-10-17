@@ -26,6 +26,14 @@ public interface IAuditLogRepository
     /// <param name="cancellationToken"></param>
     /// <returns></returns>
     Task<int> CountAsync(Func<AuditLog, bool>? filter, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Returns aggregates (affected rows count and time span) grouped by CorrelationId for the given set.
+    /// </summary>
+    /// <param name="correlationIds">Set of correlation IDs to aggregate.</param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    Task<IReadOnlyDictionary<Guid, ChangeAggregate>> GetAggregatesByCorrelationIdsAsync(IEnumerable<Guid> correlationIds, CancellationToken cancellationToken = default);
 }
 
 public class AuditLogRepository : IAuditLogRepository
@@ -78,5 +86,35 @@ public class AuditLogRepository : IAuditLogRepository
             return await _db.AuditLogs.CountAsync(cancellationToken);
 
         return _db.AuditLogs.Where(filter).Count();
+    }
+
+    public async Task<IReadOnlyDictionary<Guid, ChangeAggregate>> GetAggregatesByCorrelationIdsAsync(IEnumerable<Guid> correlationIds, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var ids = correlationIds.Distinct().ToList();
+            if (ids.Count == 0)
+                return new Dictionary<Guid, ChangeAggregate>();
+
+            var aggregates = await _db.AuditLogs
+                .AsNoTracking()
+                .Where(a => a.CorrelationId.HasValue && ids.Contains(a.CorrelationId.Value))
+                .GroupBy(a => a.CorrelationId!.Value)
+                .Select(g => new ChangeAggregate
+                {
+                    CorrelationId = g.Key,
+                    Count = g.Count(),
+                    Start = g.Min(x => x.CreatedDate),
+                    End = g.Max(x => x.CreatedDate)
+                })
+                .ToDictionaryAsync(a => a.CorrelationId, a => a, cancellationToken);
+
+            return aggregates;
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "Error getting aggregates for audit logs by correlation IDs");
+            throw;
+        }
     }
 }

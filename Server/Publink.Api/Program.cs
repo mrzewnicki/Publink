@@ -17,6 +17,8 @@ builder.Services.AddSwaggerGen(c =>
         Title = "Publink Logs API",
         Version = "v1"
     });
+    // Use fully qualified names for schema IDs to avoid collisions for nested types like "Response"
+    c.CustomSchemaIds(type => type.FullName?.Replace("+", "."));
 });
 
 builder.Services.AddOpenApi();
@@ -34,10 +36,11 @@ builder.Services.AddDbContext<PublinkDbContext>(options =>
     options.UseNpgsql(connectionString));
 
 // Scan Publink.Core for MediatR handlers
-builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<GetLogsQuery.Request>());
+builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<GetLogsForOrganisationQuery.Request>());
 
 // Repositories
 builder.Services.AddScoped<IAuditLogRepository, AuditLogRepository>();
+builder.Services.AddScoped<IOrganisationRepository, OrganisationRepository>();
 
 var app = builder.Build();
 

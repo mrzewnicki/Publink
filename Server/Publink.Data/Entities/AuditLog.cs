@@ -54,4 +54,7 @@ public class AuditLog
 
     [Column("sub_unit_id")]
     public Guid? SubUnitId { get; set; }
+
+    [ForeignKey(nameof(CorrelationId))]
+    public DocumentHeader? DocumentHeader { get; set; }
 }

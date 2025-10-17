@@ -1,5 +1,6 @@
 ﻿namespace Publink.Shared.Dtos;
 
+/*
 public class AuditLogDto
 {
     public int Id { get; set; }
@@ -17,4 +18,16 @@ public class AuditLogDto
     public Guid? ParentId { get; set; }
     public Guid? CorrelationId { get; set; }
     public Guid? SubUnitId { get; set; }
+}*/
+
+public class AuditLogDto
+{
+    public int Id { get; set; }
+    public string ChangedBy { get; set; }
+    public string ContractNumber { get; set; }
+    public int Type { get; set; }
+    public int EntityType { get; set; }
+    public DateTime CreatedDate { get; set; }
+    public DateTime ProcessTookTime { get; set; }
+    public int EntitiesAffectCount { get; set; }
 }

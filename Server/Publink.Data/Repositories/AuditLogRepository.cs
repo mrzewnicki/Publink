@@ -8,9 +8,24 @@ namespace Publink.Data.Repositories;
 
 public interface IAuditLogRepository
 {
-    IEnumerable<AuditLog> GetList(QueryPagination? pagination, OrderByQuery<AuditLog>? order,
-        CancellationToken cancellationToken = default);
-    Task<int> CountAsync(CancellationToken cancellationToken = default);
+    /// <summary>
+    /// Returns a list of AuditLogs with pagination, order and filter.
+    /// </summary>
+    /// <param name="filter"></param>
+    /// <param name="pagination"></param>
+    /// <param name="order"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    IEnumerable<AuditLog> GetList(Func<AuditLog, bool>? filter, QueryPagination? pagination,
+        OrderByQuery<AuditLog>? order, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Count audit logs with optional filter.
+    /// </summary>
+    /// <param name="filter"></param>
+    /// <param name="cancellationToken"></param>
+    /// <returns></returns>
+    Task<int> CountAsync(Func<AuditLog, bool>? filter, CancellationToken cancellationToken = default);
 }
 
 public class AuditLogRepository : IAuditLogRepository
@@ -24,7 +39,8 @@ public class AuditLogRepository : IAuditLogRepository
         _logger = logger;
     }
 
-    public IEnumerable<AuditLog> GetList(QueryPagination? pagination, OrderByQuery<AuditLog>? order, CancellationToken cancellationToken = default)
+    // <inheritdoc />
+    public IEnumerable<AuditLog> GetList(Func<AuditLog, bool>? filter, QueryPagination? pagination, OrderByQuery<AuditLog>? order, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -35,12 +51,17 @@ public class AuditLogRepository : IAuditLogRepository
             };
             order ??= new OrderByQuery<AuditLog>(x => x.CreatedDate, OrderDirection.Desc);
 
-            var query = order.Direction is OrderDirection.Asc
-                ? _db.AuditLogs.OrderBy(order.KeySelector)
-                : _db.AuditLogs.OrderByDescending(order.KeySelector);
+            var query = filter is null
+                ? _db.AuditLogs.AsQueryable()
+                : _db.AuditLogs.Where(filter).AsQueryable();
+
+            query = order.Direction is OrderDirection.Asc
+                ? query.AsEnumerable().OrderBy(order.KeySelector).AsQueryable()
+                : query.AsEnumerable().OrderByDescending(order.KeySelector).AsQueryable();
 
             return query.Skip(pagination.Skip)
                 .Take(pagination.Take)
+                .Include(log => log.DocumentHeader)
                 .AsEnumerable();
         }
         catch (Exception e)
@@ -50,8 +71,12 @@ public class AuditLogRepository : IAuditLogRepository
         }
     }
 
-    public Task<int> CountAsync(CancellationToken cancellationToken = default)
+    // <inheritdoc />
+    public async Task<int> CountAsync(Func<AuditLog, bool>? filter, CancellationToken cancellationToken = default)
     {
-        return _db.AuditLogs.CountAsync(cancellationToken);
+        if(filter is null)
+            return await _db.AuditLogs.CountAsync(cancellationToken);
+
+        return _db.AuditLogs.Where(filter).Count();
     }
 }

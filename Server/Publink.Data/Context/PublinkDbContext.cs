@@ -22,6 +22,11 @@ public partial class PublinkDbContext : DbContext
             entity.HasKey(e => e.Id).HasName("pk_auditlog");
 
             entity.Property(e => e.Id).UseIdentityAlwaysColumn();
+
+            // Relationship: AuditLog (correlation_id) -> DocumentHeader (id)
+            entity.HasOne(a => a.DocumentHeader)
+                .WithMany()
+                .HasForeignKey(a => a.CorrelationId);
         });
 
         modelBuilder.Entity<DocumentHeader>(entity =>

@@ -1,4 +1,5 @@
-﻿using MediatR;
+﻿using System.Net;
+using MediatR;
 using Publink.Data.Entities;
 using Publink.Data.Repositories;
 using Publink.Data.Repositories.Models;
@@ -6,16 +7,19 @@ using Publink.Shared.Dtos;
 
 namespace Publink.Core.CQRS.Queries;
 
-public static class GetLogsQuery
+public static class GetLogsForOrganisationQuery
 {
-    public sealed record Request(QueryDto Query) : IRequest<Response>;
+    public sealed record Request(QueryDto Query, Guid OrganizationId) : IRequest<Response>;
 
-    public sealed record Response(IEnumerable<AuditLogDto> Items, int TotalCount);
+    public sealed record Response(IEnumerable<AuditLogDto> Items, int TotalCount, HttpStatusCode StatusCode = HttpStatusCode.OK);
 
     public sealed class Handler(IAuditLogRepository repository) : IRequestHandler<Request, Response>
     {
         public async Task<Response> Handle(Request request, CancellationToken cancellationToken)
         {
+            if(request.OrganizationId == Guid.Empty)
+                return new Response([], 0, HttpStatusCode.BadRequest);
+
             var pageSize = request.Query.PageSize <= 0 ? 10 : request.Query.PageSize;
             var pageNumber = request.Query.PageNumber <= 0 ? 1 : request.Query.PageNumber;
             var skip = (pageNumber - 1) * pageSize;
@@ -27,9 +31,11 @@ public static class GetLogsQuery
                 Take = pageSize
             };
 
-            var entities = repository.GetList(pagination, order);
+            Func<AuditLog, bool> predicate = log => log.OrganizationId == request.OrganizationId;
+
+            var entities = repository.GetList(predicate, pagination, order);
             var items = entities.Select(MapToDto).AsEnumerable();
-            var totalCount = await repository.CountAsync(cancellationToken);
+            var totalCount = await repository.CountAsync(predicate, cancellationToken);
 
             return new Response(items, totalCount);
         }
@@ -37,20 +43,11 @@ public static class GetLogsQuery
         private static AuditLogDto MapToDto(AuditLog e) => new AuditLogDto
         {
             Id = e.Id,
-            OrganizationId = e.OrganizationId,
-            UserId = e.UserId,
-            UserEmail = e.UserEmail,
+            ChangedBy = e.UserEmail,
+            ContractNumber = e.DocumentHeader != null && e.DocumentHeader.Number != null ? e.DocumentHeader.Number : string.Empty,
             Type = (int)e.Type,
             EntityType = (int)e.EntityType,
             CreatedDate = e.CreatedDate,
-            OldValues = e.OldValues,
-            NewValues = e.NewValues,
-            AffectedColumns = e.AffectedColumns,
-            PrimaryKey = e.PrimaryKey,
-            EntityId = e.EntityId,
-            ParentId = e.ParentId,
-            CorrelationId = e.CorrelationId,
-            SubUnitId = e.SubUnitId
         };
 
         private static OrderByQuery<AuditLog> ParseSort(string? sort)

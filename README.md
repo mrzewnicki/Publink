@@ -151,3 +151,7 @@ Poniżej zestawiam wzorce i praktyki zastosowane w projekcie wraz z krótkim uza
 - OpenAPI i Swagger
   - Co: automatyczna specyfikacja OpenAPI generowana przez ASP.NET Core (AddOpenApi/MapOpenApi) oraz dokumentacja UI przez Swashbuckle/Swagger UI.
   - Dlaczego: samoopisujące się API.Łatwiejsza integracja, szybkie poznanie endpointów przez UI
+
+- Redux Toolkit
+  - Co: Zarządzanie stanem w kliencie w celu strukturyzacji wykorzystywanych przez client danych.
+  - Dlaczego: Ułatwia zarządzanie stanem aplikacji, szczególnie przy większej liczbie komponentów i złożonych interakcjach. Umożliwia łatwe debugowanie i śledzenie zmian stanu. Dzięki temu Client pobiera dane tylko dla nowych stron paginacji lub przy zmianie konfiguracji sortowania.
